@@ -1,0 +1,5 @@
+/workspaces/CS219-Advanced-Programming/Lab10/CMakeFiles/edit_cache.dir
+/workspaces/CS219-Advanced-Programming/Lab10/CMakeFiles/main.dir
+/workspaces/CS219-Advanced-Programming/Lab10/CMakeFiles/libs.dir
+/workspaces/CS219-Advanced-Programming/Lab10/CMakeFiles/rebuild_cache.dir
+/workspaces/CS219-Advanced-Programming/Lab10/CMakeFiles/liba.dir

@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/workspaces/CS219-Advanced-Programming/Lab10/libs/divide.cpp
+function.h
+/workspaces/CS219-Advanced-Programming/Lab10/libs/function.h
+iostream
+-
+
+/workspaces/CS219-Advanced-Programming/Lab10/libs/mul.cpp
+function.h
+/workspaces/CS219-Advanced-Programming/Lab10/libs/function.h
+
+include/function.h
+

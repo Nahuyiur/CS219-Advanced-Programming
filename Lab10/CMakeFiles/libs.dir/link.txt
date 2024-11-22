@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC   -shared -Wl,-soname,liblibs.so -o liblibs.so CMakeFiles/libs.dir/libs/divide.cpp.o CMakeFiles/libs.dir/libs/mul.cpp.o 

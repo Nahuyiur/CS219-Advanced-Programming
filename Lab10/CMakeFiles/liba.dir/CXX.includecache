@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/workspaces/CS219-Advanced-Programming/Lab10/liba/add.cpp
+function.h
+/workspaces/CS219-Advanced-Programming/Lab10/liba/function.h
+
+/workspaces/CS219-Advanced-Programming/Lab10/liba/sub.cpp
+function.h
+/workspaces/CS219-Advanced-Programming/Lab10/liba/function.h
+
+include/function.h
+

@@ -1,0 +1,26 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/workspaces/CS219-Advanced-Programming/Lab9/candybar_cmake/candybar.cpp
+candybar.h
+/workspaces/CS219-Advanced-Programming/Lab9/candybar_cmake/candybar.h
+iostream
+-
+cstring
+-
+
+/workspaces/CS219-Advanced-Programming/Lab9/candybar_cmake/candybar.h
+iostream
+-
+
+/workspaces/CS219-Advanced-Programming/Lab9/candybar_cmake/main.cpp
+candybar.h
+/workspaces/CS219-Advanced-Programming/Lab9/candybar_cmake/candybar.h
+iostream
+-
+
