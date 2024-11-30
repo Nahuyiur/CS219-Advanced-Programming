@@ -83,3 +83,13 @@ void MiniVim::normal_mode(int ch) {
             break;
     }
 }
+
+int main() {
+    MiniVim editor;
+    
+    editor.init();
+    editor.run();
+    endwin();
+
+    return 0;
+}
