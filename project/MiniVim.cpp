@@ -3,7 +3,7 @@
 #include <vector>
 using namespace std;
 
-Class MiniVim {
+class MiniVim {
 private:
     vector<string> lines;
     int cursor_x, cursor_y;
@@ -12,7 +12,7 @@ private:
     bool command_mode_active;
 
 public:
-    MiniVim(): cursor_x(0), cursor_y(0), insert_mode(false), command_mode_active(false) {}
+    MiniVim(): cursor_x(0), cursor_y(0), insert_mode_active(false), command_mode_active(false) {}
     void init();
     void run();
     void normal_mode(int ch);
@@ -74,7 +74,7 @@ void MiniVim::normal_mode(int ch) {
             cursor_x = lines[cursor_y].length();
             break;
         case 'i':
-            insert_mode = true;
+            insert_mode_active = true;
             break;
         case ':':
             command_mode_active = true;
