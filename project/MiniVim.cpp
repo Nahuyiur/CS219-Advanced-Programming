@@ -1,11 +1,12 @@
 #include <ncurses.h>
 #include <string>
 #include <vector>
+#include <fstream>
 using namespace std;
 
 Class MiniVim {
 public:
-    MiniVim(const std::string& filename): filename(filename), cursor_x(0), cursor_y(0), insert_mode(false), command_mode_active(false) {}
+    MiniVim(const string& filename): filename(filename), cursor_x(0), cursor_y(0), insert_mode(false), command_mode_active(false) {}
     
     ~MiniVim() {endwin();}
 
