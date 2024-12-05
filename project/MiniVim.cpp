@@ -4,14 +4,17 @@
 #include <fstream>
 using namespace std;
 
-Class MiniVim {
+class MiniVim {
 public:
-    MiniVim(const string& filename): filename(filename), cursor_x(0), cursor_y(0), insert_mode(false), command_mode_active(false) {}
+    MiniVim(const string& filename): filename(filename), cursor_x(0), cursor_y(0), insert_mode_active(false), command_mode_active(false) {}
     
     ~MiniVim() {endwin();}
 
     void run() {
         while (true) {
+            draw();
+            char ch = getch();
+            if (ch == 'q') break;
             if(command_mode_active){
                 //TODO
             }
@@ -19,20 +22,13 @@ public:
                 //TODO
             }
             else{
-                normal_mode(getch());
+                normal_mode(ch);
             }
         }
     }
-
-private:
-    string filename;
-    vector<string> lines;
-    int cursor_x, cursor_y;
-    int screen_width, screen_height;
-    bool insert_mode_active;
-    bool command_mode_active;
-
+    
     void init() {
+        loadFile();
         initscr();
         noecho();
         cbreak();
@@ -40,25 +36,52 @@ private:
         keypad(stdscr, TRUE);
         curs_set(TRUE);
         getmaxyx(stdscr, screen_height, screen_width);
+        refresh();
     }
 
-    void loadFile() {}
+private:
+    string filename;
+    vector<string> lines;
+    int cursor_x=0, cursor_y=0;
+    int screen_width, screen_height;
+    bool insert_mode_active;
+    bool command_mode_active;
+
+    void loadFile() {
+        ifstream file(filename);
+        if (file.is_open()) {
+            string line;
+            while (getline(file, line)) {
+                lines.push_back(line);
+            }
+            file.close();
+        }
+    }
 
     void saveFile() {}
+
+    void draw() {
+        clear();
+        for (size_t i = 0; i < lines.size(); ++i) {
+            mvprintw(i, 0, "%s", lines[i].c_str());
+        }
+        move(cursor_y, cursor_x);
+        refresh();
+    }
 
     void normal_mode(int ch) {
         switch (ch) {
             case 'h':
-                move_cursor_left();
+                if (cursor_x > 0) --cursor_x;
                 break;
             case 'j':
-                move_cursor_down();
+                if (cursor_y < lines.size() - 1) ++cursor_y;
                 break;
             case 'k':
-                move_cursor_up();
+                if (cursor_y > 0) --cursor_y;
                 break;
             case 'l':
-                move_cursor_right();
+                if (cursor_x < lines[cursor_y].length()) ++cursor_x;
                 break;
             case '0':
                 cursor_x = 0;
@@ -67,7 +90,7 @@ private:
                 cursor_x = lines[cursor_y].length();
                 break;
             case 'i':
-                insert_mode = true;
+                insert_mode_active = true;
                 break;
             case ':':
                 command_mode_active = true;
@@ -81,14 +104,6 @@ private:
 
     void command_mode(int ch){}
 
-    void move_cursor_left(){}
-
-    void move_cursor_right(){}
-
-    void move_cursor_up(){}
-
-    void move_cursor_down(){}
-
     void add_char(char c){}
 
     void delete_char(){}
@@ -98,14 +113,14 @@ private:
     void redo(){}
 };  
 
-int main() {
+int main(int argc, char* argv[]) {
     //判断命令行参数是不是有两个 e.g. ./minivim filename.txt
     if (argc != 2) {
-        printw("Usage: %s <filename>\n", arg[0]);
+        printw("Usage: %s <filename>\n", argv[0]);
         return 1;
     }
 
-    MiniVim editor(arg[1]);    
+    MiniVim editor(argv[1]);    
     editor.init();
     editor.run();
 
