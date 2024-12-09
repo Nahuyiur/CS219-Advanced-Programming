@@ -81,35 +81,35 @@ private:
                 if (cursor_y < lines.size() - 1 && cursor_x < lines[cursor_y+1].length()) ++cursor_y;
                 else if (cursor_y < lines.size() - 1) {
                     ++cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
             case KEY_DOWN:
                 if (cursor_y < lines.size() - 1 && cursor_x < lines[cursor_y+1].length()) ++cursor_y;
                 else if (cursor_y < lines.size() - 1) {
                     ++cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
             case 'k':
                 if (cursor_y > 0 && cursor_x < lines[cursor_y-1].length()) --cursor_y;
                 else if (cursor_y > 0) {
                     --cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
             case KEY_UP:
                 if (cursor_y > 0 && cursor_x < lines[cursor_y-1].length()) --cursor_y;
                 else if (cursor_y > 0) {
                     --cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
             case 'l':
-                if (cursor_x < lines[cursor_y].length()) ++cursor_x;
+                if (cursor_x < lines[cursor_y].length()-1) ++cursor_x;
                 break;
             case KEY_RIGHT:
-                if (cursor_x < lines[cursor_y].length()) ++cursor_x;
+                if (cursor_x < lines[cursor_y].length()-1) ++cursor_x;
                 break;            
             case '0':
                 cursor_x = 0;
@@ -129,6 +129,20 @@ private:
                 cursor_y = lines.size() - 1;
                 cursor_x = 0;
                 break;
+            case 'd': 
+                if (getch() == 'd' && cursor_y < lines.size()) {
+                    lines.erase(lines.begin() + cursor_y);
+                    if (lines.empty()) {
+                        lines.push_back("");
+                    }
+                    if (cursor_y >= lines.size()) {
+                        --cursor_y;
+                        if(cursor_x>=lines[cursor_y].size()) cursor_x=lines[cursor_y].size()-1;
+                    }
+                    if (cursor_x >= lines[cursor_y].size()) cursor_x=lines[cursor_y].size()-1;
+                    break;
+                }
+                else break;    
             case 'i':
                 insert_mode_active = true;
                 break;
