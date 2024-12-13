@@ -11,7 +11,7 @@ int main()
     pd = shared_ptr<double>(p_reg);
     cout << "*pd = " << *pd << endl;
 
-    // `make_shared` 用于创建并初始化一个新的对象
+    // 用`make_shared` 创建并初始化一个新的对象
     shared_ptr<double> pshared(p_reg); 
     cout << "*pshared = " << *pshared << endl;
 

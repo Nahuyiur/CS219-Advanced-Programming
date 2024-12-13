@@ -12,7 +12,12 @@ private:
 public:
     //row 指有几行，col指有几列
     Matrix(int r, int c) : rows(r), cols(c), data(make_shared<vector<float> >(r * c, 0)) {}
-
+    
+    Matrix(const Matrix &m) : rows(m.rows), cols(m.cols), data(make_shared<vector<float>>(m.rows * m.cols)) {
+        for (int i = 0; i < rows * cols; ++i) {
+            (*data)[i] = (*m.data)[i];
+        }
+    }
     float &operator()(int r, int c) {
         if (r < 0 || r >= rows || c < 0 || c >= cols) {
             throw out_of_range("Index out of range");
