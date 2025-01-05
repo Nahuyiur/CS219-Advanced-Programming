@@ -30,10 +30,10 @@ public:
     void init() {
         loadFile();
         initscr();
+        keypad(stdscr, TRUE);
         noecho();
         cbreak();
         raw();
-        keypad(stdscr, TRUE);
         curs_set(TRUE);
         getmaxyx(stdscr, screen_height, screen_width);
         refresh();
@@ -46,6 +46,7 @@ private:
     int screen_width, screen_height;
     bool insert_mode_active;
     bool command_mode_active;
+    string copied_line;
 
     void loadFile() {
         ifstream file(filename);
@@ -74,42 +75,42 @@ private:
             case 'h':
                 if (cursor_x > 0) --cursor_x;
                 break;
-            case KEY_LEFT:
+            case 4:
                 if (cursor_x > 0) --cursor_x;
                 break;
             case 'j':
                 if (cursor_y < lines.size() - 1 && cursor_x < lines[cursor_y+1].length()) ++cursor_y;
                 else if (cursor_y < lines.size() - 1) {
                     ++cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
-            case KEY_DOWN:
+            case 2:
                 if (cursor_y < lines.size() - 1 && cursor_x < lines[cursor_y+1].length()) ++cursor_y;
                 else if (cursor_y < lines.size() - 1) {
                     ++cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
             case 'k':
                 if (cursor_y > 0 && cursor_x < lines[cursor_y-1].length()) --cursor_y;
                 else if (cursor_y > 0) {
                     --cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
-            case KEY_UP:
+            case 3:
                 if (cursor_y > 0 && cursor_x < lines[cursor_y-1].length()) --cursor_y;
                 else if (cursor_y > 0) {
                     --cursor_y;
-                    cursor_x = lines[cursor_y].length();
+                    cursor_x = lines[cursor_y].length()-1;
                 }
                 break;
             case 'l':
-                if (cursor_x < lines[cursor_y].length()) ++cursor_x;
+                if (cursor_x < lines[cursor_y].length()-1) ++cursor_x;
                 break;
-            case KEY_RIGHT:
-                if (cursor_x < lines[cursor_y].length()) ++cursor_x;
+            case 5:
+                if (cursor_x < lines[cursor_y].length()-1) ++cursor_x;
                 break;            
             case '0':
                 cursor_x = 0;
@@ -129,6 +130,31 @@ private:
                 cursor_y = lines.size() - 1;
                 cursor_x = 0;
                 break;
+            case 'd': 
+                if (getch() == 'd' && cursor_y < lines.size()) {
+                    lines.erase(lines.begin() + cursor_y);
+                    if (lines.empty()) {
+                        lines.push_back("");
+                    }
+                    if (cursor_y >= lines.size()) {
+                        --cursor_y;
+                        if(cursor_x>=lines[cursor_y].size()) cursor_x=lines[cursor_y].size()-1;
+                    }
+                    if (cursor_x >= lines[cursor_y].size()) cursor_x=lines[cursor_y].size()-1;
+                    break;
+                }
+                else break;   
+            case 'y': // 复制当前行
+                if (getch() == 'y') {
+                    copied_line = lines[cursor_y];  // 保存当前行
+                }
+                break;
+            case 'p': // 粘贴复制的行
+                if (!copied_line.empty()) {
+                    lines.insert(lines.begin() + cursor_y + 1, copied_line);
+                    cursor_y++;
+                }
+                break;
             case 'i':
                 insert_mode_active = true;
                 break;
@@ -140,12 +166,31 @@ private:
         }
     }
 
-    void insert_mode(int ch){
-        // ch==27 ESC键
-        if (ch==27){
-            insert_mode_active=false;
+    void insert_mode(int ch) {
+        if (ch == 27) {  // ESC key to exit insert mode
+            insert_mode_active = false;
+        } else if (ch == 10) {  // Enter key to create a new line
+            // Split the current line at the cursor position and create a new line
+            string new_line = lines[cursor_y].substr(cursor_x);
+            lines[cursor_y] = lines[cursor_y].substr(0, cursor_x);
+            lines.insert(lines.begin() + cursor_y + 1, new_line);
+            cursor_y++;
+            cursor_x = 0;
+        } else if (ch == 7 || ch == KEY_BACKSPACE) {  // Backspace to delete
+            if (cursor_x > 0) {
+                lines[cursor_y].erase(cursor_x - 1, 1);
+                cursor_x--;
+            } else if (cursor_y > 0) {  // Handle backspace at the beginning of a line (merge with the previous line)
+                cursor_x = lines[cursor_y - 1].length();
+                lines[cursor_y - 1] += lines[cursor_y];
+                lines.erase(lines.begin() + cursor_y);
+                cursor_y--;
+            }
+        } else {
+            // Insert the character at the current cursor position
+            lines[cursor_y].insert(cursor_x, 1, ch);
+            cursor_x++;
         }
-        //TODO
     }
 
     void command_mode(int ch){
@@ -162,6 +207,7 @@ private:
 };  
 
 int main(int argc, char* argv[]) {
+    keypad(stdscr, TRUE);
     //判断命令行参数是不是有两个 e.g. ./minivim filename.txt
     if (argc != 2) {
         printw("Usage: %s <filename>\n", argv[0]);
