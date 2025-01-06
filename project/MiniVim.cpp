@@ -217,6 +217,5 @@ int main(int argc, char* argv[]) {
     MiniVim editor(argv[1]);    
     editor.init();
     editor.run();
-
     return 0;
 }
