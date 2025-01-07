@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
-
+#include <stack>
 using namespace std;
 
 class MiniVim {
@@ -51,6 +51,9 @@ private:
     bool command_mode_active;
     string command_buffer;
     string copied_line;
+    stack<pair<string, pair<int, string>>> undo_stack; // {操作类型, {行号, 操作文本}}
+    stack<pair<string, pair<int, string>>> redo_stack;
+
 
     void loadFile() {
         ifstream file(filename);
@@ -222,6 +225,9 @@ private:
                 break;
             case 'd': 
                 if (getch() == 'd' && cursor_y < lines.size()) {
+                    // 记录删除操作到撤销栈，存储删除行的内容和行号
+                    string deleted_line = lines[cursor_y];
+                    undo_stack.push({"delete", {cursor_y, deleted_line}});
                     lines.erase(lines.begin() + cursor_y);
                     if (lines.empty()) {
                         lines.push_back("");
@@ -240,10 +246,18 @@ private:
                 break;
             case 'p': 
                 if (!copied_line.empty()) {
+                     // 记录粘贴操作到撤销栈，存储粘贴的内容和插入位置
+                    undo_stack.push({"paste", {cursor_y, copied_line}});
                     lines.insert(lines.begin() + cursor_y + 1, copied_line);
                     ++cursor_y;
                 }
                 adjust_window(); // [MODIFIED]
+                break;
+            case 'u': // 撤销
+                undo();
+                break;
+            case 18: // Ctrl+r - 重做
+                redo();
                 break;
             default:
                 break;
@@ -343,6 +357,41 @@ private:
             return;
         }
         command_buffer += ch;
+    }
+    // 撤销操作
+    void undo() {
+        if (!undo_stack.empty()) {
+            auto operation = undo_stack.top();
+            undo_stack.pop();
+
+            // 将撤销的操作存入 redo 栈
+            redo_stack.push(operation);
+
+            if (operation.first == "delete") {
+                // 恢复删除的行
+                lines.insert(lines.begin() + operation.second.first, operation.second.second);
+            } else if (operation.first == "paste") {
+                // 恢复粘贴的行
+                lines.erase(lines.begin() + operation.second.first);
+            }
+        }
+    }
+
+    // 重做操作
+    void redo() {
+        if (!redo_stack.empty()) {
+            auto operation = redo_stack.top();
+            redo_stack.pop();
+
+            // 将重做的操作存入 undo 栈
+            undo_stack.push(operation);
+
+            if (operation.first == "delete") {
+                lines.erase(lines.begin() + operation.second.first);
+            } else if (operation.first == "paste") {
+                lines.insert(lines.begin() + operation.second.first, operation.second.second);
+            }
+        }
     }
 };
 
