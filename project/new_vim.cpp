@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
-
+#include <stack>
 using namespace std;
 
 class MiniVim {
@@ -50,6 +50,9 @@ private:
     bool command_mode_active;
     string command_buffer;
     string copied_line;
+        // 撤销与重做的栈
+    stack<pair<string, pair<int, string>>> undo_stack; // {操作类型, {行号, 操作文本}}
+    stack<pair<string, pair<int, string>>> redo_stack;
 
     void loadFile() {
         ifstream file(filename);
@@ -184,18 +187,20 @@ private:
                 cursor_y = lines.size() - 1;
                 cursor_x = 0;
                 break;
-            case 'd': 
+            case 'd':
                 if (getch() == 'd' && cursor_y < lines.size()) {
+                    // 记录删除操作到撤销栈，存储删除行的内容和行号
+                    string deleted_line = lines[cursor_y];
+                    undo_stack.push({"delete", {cursor_y, deleted_line}});
                     lines.erase(lines.begin() + cursor_y);
-                    if (lines.empty()) {
-                        lines.push_back("");
-                    }
+                    if (lines.empty()) lines.push_back("");
                     if (cursor_y >= lines.size()) {
                         --cursor_y;
                         cursor_x = min(cursor_x, (int)lines[cursor_y].size());
                     }
                 }
                 break;
+
             case 'y': // 复制当前行
                 if (getch() == 'y') {
                     copied_line = lines[cursor_y];
@@ -203,9 +208,17 @@ private:
                 break;
             case 'p': // 粘贴复制的行
                 if (!copied_line.empty()) {
+                    // 记录粘贴操作到撤销栈，存储粘贴的内容和插入位置
+                    undo_stack.push({"paste", {cursor_y, copied_line}});
                     lines.insert(lines.begin() + cursor_y + 1, copied_line);
                     ++cursor_y;
                 }
+                break;
+            case 'u': // 撤销
+                undo();
+                break;
+            case 18: // Ctrl+r - 重做
+                redo();
                 break;
             default:
                 break;
@@ -301,7 +314,41 @@ private:
         }
         command_buffer += ch;
     }
+    // 撤销操作
+    void undo() {
+        if (!undo_stack.empty()) {
+            auto operation = undo_stack.top();
+            undo_stack.pop();
 
+            // 将撤销的操作存入 redo 栈
+            redo_stack.push(operation);
+
+            if (operation.first == "delete") {
+                // 恢复删除的行
+                lines.insert(lines.begin() + operation.second.first, operation.second.second);
+            } else if (operation.first == "paste") {
+                // 恢复粘贴的行
+                lines.erase(lines.begin() + operation.second.first);
+            }
+        }
+    }
+
+    // 重做操作
+    void redo() {
+        if (!redo_stack.empty()) {
+            auto operation = redo_stack.top();
+            redo_stack.pop();
+
+            // 将重做的操作存入 undo 栈
+            undo_stack.push(operation);
+
+            if (operation.first == "delete") {
+                lines.erase(lines.begin() + operation.second.first);
+            } else if (operation.first == "paste") {
+                lines.insert(lines.begin() + operation.second.first, operation.second.second);
+            }
+        }
+    }
 };
 int main(int argc, char* argv[]) {
     if (argc != 2) {
