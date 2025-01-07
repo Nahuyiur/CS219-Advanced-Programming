@@ -10,7 +10,7 @@ using namespace std;
 
 class MiniVim {
 public:
-    MiniVim(const string& filename): filename(filename), cursor_x(0), cursor_y(0), top_line(0), insert_mode_active(false), command_mode_active(false) {} // [MODIFIED] 添加 top_line 变量
+    MiniVim(const string& filename): filename(filename), cursor_x(0), cursor_y(0), top_line(0), left_column(0), insert_mode_active(false), command_mode_active(false) {} // [MODIFIED] 添加 top_line 和 left_column
 
     ~MiniVim() { endwin(); }
 
@@ -45,7 +45,7 @@ private:
     string filename;
     vector<string> lines;
     int cursor_x = 0, cursor_y = 0;
-    int top_line = 0; // [ADDED] 当前显示的第一行
+    int top_line = 0, left_column = 0; // [ADDED] 当前显示的第一行和最左列
     int screen_width, screen_height;
     bool insert_mode_active;
     bool command_mode_active;
@@ -74,11 +74,19 @@ private:
         }
     }
 
-    void adjust_window() { // [ADDED] 滚动窗格的核心逻辑
+    void adjust_window() { // [ADDED] 滚动窗格逻辑
+        // 垂直滚动
         if (cursor_y < top_line) {
             top_line = cursor_y; // 如果光标在当前窗口上方，则向上滚动
         } else if (cursor_y >= top_line + screen_height - 2) {
             top_line = cursor_y - (screen_height - 3); // 如果光标在当前窗口下方，则向下滚动
+        }
+
+        // 水平滚动
+        if (cursor_x < left_column) {
+            left_column = cursor_x; // 如果光标在当前窗口左侧，则向左滚动
+        } else if (cursor_x >= left_column + screen_width - 10) { // [MODIFIED] 10 留出行号和分隔符的宽度
+            left_column = cursor_x - (screen_width - 11); // 滚动窗口，确保光标可见
         }
     }
 
@@ -89,14 +97,17 @@ private:
         for (int i = top_line; i < lines.size() && i < top_line + screen_height - 2; ++i) { // [MODIFIED] 根据 top_line 调整显示范围
             stringstream ss;
             ss << setw(line_number_width) << right << (i + 1) << " | "; // 行号 + 分隔符
-            mvprintw(i - top_line, 0, "%s%s", ss.str().c_str(), lines[i].c_str()); // [MODIFIED] i - top_line 调整显示位置
+
+            // 截取需要显示的部分
+            string visible_text = lines[i].substr(left_column, screen_width - line_number_width - 3); // [MODIFIED] 根据 left_column 截取
+            mvprintw(i - top_line, 0, "%s%s", ss.str().c_str(), visible_text.c_str()); // [MODIFIED] 调整显示位置
         }
-        move(cursor_y - top_line, cursor_x + line_number_width + 3); // [MODIFIED] 调整光标位置
+        move(cursor_y - top_line, cursor_x - left_column + line_number_width + 3); // [MODIFIED] 调整光标位置
 
         // 光标高亮
         attron(A_STANDOUT);
         if (cursor_x < lines[cursor_y].length()) {
-            mvprintw(cursor_y - top_line, cursor_x + line_number_width + 3, "%c", lines[cursor_y][cursor_x]); // [MODIFIED] 调整光标位置
+            mvprintw(cursor_y - top_line, cursor_x - left_column + line_number_width + 3, "%c", lines[cursor_y][cursor_x]); // [MODIFIED] 调整光标位置
         }
         attroff(A_STANDOUT);
 
@@ -149,20 +160,22 @@ private:
             case 'h':
             case 4:
                 if (cursor_x > 0) --cursor_x;
+                adjust_window(); // [MODIFIED]
                 break;
             case 'j':
             case 2:
                 if (cursor_y < lines.size() - 1) ++cursor_y;
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
             case 'k':
             case 3:
                 if (cursor_y > 0) --cursor_y;
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
             case 'l':
             case 5:
                 if (cursor_x < lines[cursor_y].size()) ++cursor_x;
+                adjust_window(); // [MODIFIED]
                 break;
             case 'i':
                 insert_mode_active = true;
@@ -173,19 +186,21 @@ private:
                 break;
             case '0':
                 cursor_x = 0;
+                adjust_window(); // [MODIFIED]
                 break;
             case '$':
                 cursor_x = lines[cursor_y].length();
+                adjust_window(); // [MODIFIED]
                 break;
             case 'g':
                 if (getch() == 'g') {
                     cursor_y = 0;
-                    adjust_window();
+                    adjust_window(); // [MODIFIED]
                 }
                 break;
             case 'G':
                 cursor_y = lines.size() - 1;
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
             case 'd': 
                 if (getch() == 'd' && cursor_y < lines.size()) {
@@ -198,6 +213,7 @@ private:
                         cursor_x = min(cursor_x, (int)lines[cursor_y].size());
                     }
                 }
+                adjust_window(); // [MODIFIED]
                 break;
             case 'y': 
                 if (getch() == 'y') {
@@ -209,7 +225,7 @@ private:
                     lines.insert(lines.begin() + cursor_y + 1, copied_line);
                     ++cursor_y;
                 }
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
             default:
                 break;
@@ -221,19 +237,21 @@ private:
             case 27:
                 insert_mode_active = false;
                 break;
-            case KEY_LEFT:
+            case 4:
                 if (cursor_x > 0) --cursor_x;
+                adjust_window(); // [MODIFIED]
                 break;
-            case KEY_RIGHT:
+            case 5:
                 if (cursor_x < lines[cursor_y].size()) ++cursor_x;
+                adjust_window(); // [MODIFIED]
                 break;
-            case KEY_UP:
+            case 3:
                 if (cursor_y > 0) --cursor_y;
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
-            case KEY_DOWN:
+            case 2:
                 if (cursor_y < lines.size() - 1) ++cursor_y;
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
             case 10:
                 {
@@ -242,7 +260,7 @@ private:
                     lines.insert(lines.begin() + cursor_y + 1, new_line);
                     ++cursor_y;
                     cursor_x = 0;
-                    adjust_window();
+                    adjust_window(); // [MODIFIED]
                 }
                 break;
             case 7:
@@ -256,11 +274,12 @@ private:
                     lines.erase(lines.begin() + cursor_y);
                     --cursor_y;
                 }
-                adjust_window();
+                adjust_window(); // [MODIFIED]
                 break;
             default:
                 lines[cursor_y].insert(cursor_x, 1, ch);
                 ++cursor_x;
+                adjust_window(); // [MODIFIED]
                 break;
         }
     }
@@ -287,7 +306,7 @@ private:
                 int target_line = stoi(command_buffer);
                 if (target_line >= 1 && target_line <= lines.size()) {
                     cursor_y = target_line - 1;
-                    adjust_window();
+                    adjust_window(); // [MODIFIED]
                     cursor_x = min(cursor_x, (int)lines[cursor_y].size());
                 }
             }

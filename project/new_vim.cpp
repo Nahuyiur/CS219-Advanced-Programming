@@ -217,19 +217,19 @@ private:
             case 27:  // ESC 键退出插入模式
                 insert_mode_active = false;
                 break;
-            case KEY_LEFT:  // 左方向键
+            case 4:  // 左方向键
                 if (cursor_x > 0) --cursor_x;
                 break;
-            case KEY_RIGHT:  // 右方向键
+            case 5:  // 右方向键
                 if (cursor_x < lines[cursor_y].size()) ++cursor_x;
                 break;
-            case KEY_UP:  // 上方向键
+            case 3:  // 上方向键
                 if (cursor_y > 0) {
                     --cursor_y;
                     if (cursor_x > lines[cursor_y].size()) cursor_x = lines[cursor_y].size();
                 }
                 break;
-            case KEY_DOWN:  // 下方向键
+            case 2:  // 下方向键
                 if (cursor_y < lines.size() - 1) {
                     ++cursor_y;
                     if (cursor_x > lines[cursor_y].size()) cursor_x = lines[cursor_y].size();
