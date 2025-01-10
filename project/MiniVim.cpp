@@ -11,9 +11,8 @@ using namespace std;
 class MiniVim {
 public:
     // 构造函数，初始化MiniVim对象
-    MiniVim(const vector<string>& filenames)//可以一次性接受多个文件名
+    MiniVim(const vector<string>& filenames)
     : cursor_x(0), cursor_y(0), top_line(0), left_column(0), insert_mode_active(false), command_mode_active(false) {
-        // 将所有文件名添加到文件历史
         file_history = filenames;
         current_file_index = 0;  // 默认加载第一个文件
         loadFile();               // 加载第一个文件
@@ -61,8 +60,8 @@ private:
     bool command_mode_active;  // 命令模式是否激活
     string command_buffer;  // 命令缓冲区
     string copied_line;  // 复制的行内容
-    stack<pair<string, pair<int, string>>> undo_stack; // 撤销栈 {操作类型, {行号, 操作文本}}
-    stack<pair<string, pair<int, string>>> redo_stack; // 重做栈
+    stack<vector<string>> undo_stack; // 撤销栈，保存整个文本的状态
+    stack<vector<string>> redo_stack; // 重做栈，保存整个文本的状态
 
     // 加载当前文件
     void loadFile() {
@@ -175,6 +174,10 @@ private:
         string& current_line = lines[cursor_y];
         size_t pos = 0;
 
+        // 记录替换前的行内容
+        string original_line = current_line;
+        undo_stack.push(lines);  // 保存整个文本的状态
+
         // 替换文本
         while ((pos = current_line.find(old_text, pos)) != string::npos) {
             current_line.replace(pos, old_text.length(), new_text);
@@ -218,6 +221,7 @@ private:
                 break;
             case 'i':
                 insert_mode_active = true;  // 进入插入模式
+                undo_stack.push(lines);  // 保存进入插入模式前的整个文本状态
                 break;
             case ':':
                 command_mode_active = true;  // 进入命令模式
@@ -247,9 +251,8 @@ private:
                 break;
             case 'd': 
                 if (getch() == 'd' && cursor_y < lines.size()) {
-                    string deleted_line = lines[cursor_y];  // 删除当前行
-                    undo_stack.push({"delete", {cursor_y, deleted_line}});
-                    lines.erase(lines.begin() + cursor_y);
+                    undo_stack.push(lines);  // 保存删除前的整个文本状态
+                    lines.erase(lines.begin() + cursor_y);  // 删除当前行
                     if (lines.empty()) {
                         lines.push_back("");
                     }
@@ -267,10 +270,11 @@ private:
                 break;
             case 'p': 
                 if (!copied_line.empty()) {
-                    undo_stack.push({"paste", {cursor_y, copied_line}});
+                    undo_stack.push(lines);  // 保存粘贴前的整个文本状态
                     lines.insert(lines.begin() + cursor_y + 1, copied_line);  // 粘贴复制的行
                     ++cursor_y;
-                } else {
+                }
+                else {
                     string new_line = lines[cursor_y].substr(cursor_x);  // 插入新行
                     lines[cursor_y] = lines[cursor_y].substr(0, cursor_x);
                     lines.insert(lines.begin() + cursor_y + 1, new_line);
@@ -294,10 +298,11 @@ private:
     // 处理插入模式输入
     void insert_mode(int ch) {
         switch (ch) {
-            case 27:
-                insert_mode_active = false;  // 退出插入模式
+            case 27:  // ESC 键，退出插入模式
+                insert_mode_active = false;
+                undo_stack.push(lines);  // 保存退出插入模式时的整个文本状态
                 break;
-            case 4:
+                case 4:
                 if (cursor_x > 0) --cursor_x;  // 左移光标
                 adjust_window();
                 break;
@@ -313,7 +318,7 @@ private:
                 if (cursor_y < lines.size() - 1) ++cursor_y;  // 下移光标
                 adjust_window();
                 break;
-            case 10:
+            case 10: 
                 {
                     string new_line = lines[cursor_y].substr(cursor_x);  // 插入新行
                     lines[cursor_y] = lines[cursor_y].substr(0, cursor_x);
@@ -324,7 +329,7 @@ private:
                 }
                 break;
             case 7:
-            case KEY_BACKSPACE:
+            case KEY_BACKSPACE:  // Backspace 键，删除字符
                 if (cursor_x > 0) {
                     lines[cursor_y].erase(cursor_x - 1, 1);  // 删除字符
                     --cursor_x;
@@ -437,32 +442,22 @@ private:
     // 撤销操作
     void undo() {
         if (!undo_stack.empty()) {
-            auto operation = undo_stack.top();
+            redo_stack.push(lines);  // 保存当前状态到重做栈
+            lines = undo_stack.top();  // 恢复到撤销栈中的状态
             undo_stack.pop();
-
-            redo_stack.push(operation);
-
-            if (operation.first == "delete") {
-                lines.insert(lines.begin() + operation.second.first, operation.second.second);  // 撤销删除
-            } else if (operation.first == "paste") {
-                lines.erase(lines.begin() + operation.second.first);  // 撤销粘贴
-            }
+            adjust_window();
+            draw();
         }
     }
 
     // 重做操作
     void redo() {
         if (!redo_stack.empty()) {
-            auto operation = redo_stack.top();
+            undo_stack.push(lines);  // 保存当前状态到撤销栈
+            lines = redo_stack.top();  // 恢复到重做栈中的状态
             redo_stack.pop();
-
-            undo_stack.push(operation);
-
-            if (operation.first == "delete") {
-                lines.erase(lines.begin() + operation.second.first);  // 重做删除
-            } else if (operation.first == "paste") {
-                lines.insert(lines.begin() + operation.second.first, operation.second.second);  // 重做粘贴
-            }
+            adjust_window();
+            draw();
         }
     }
 };
@@ -481,6 +476,5 @@ int main(int argc, char* argv[]) {
     MiniVim editor(filenames);  // 创建MiniVim对象
     editor.init();  // 初始化
     editor.run();  // 运行
-
     return 0;
 }
