@@ -127,7 +127,7 @@ private:
 
         // 确保光标位置在有效范围内
         if (cursor_y >= lines.size()) cursor_y = lines.size() - 1;
-        cursor_x = min(cursor_x, (int)lines[cursor_y].length() - 1);
+        cursor_x = min(cursor_x, (int)lines[cursor_y].length());
         cursor_x = max(cursor_x, 0);
 
         // 移动光标到正确位置
@@ -216,7 +216,7 @@ private:
                 break;
             case 'l':
             case 5:
-                if (cursor_x < lines[cursor_y].size()) ++cursor_x;  // 右移光标
+                if (cursor_x <= lines[cursor_y].size()) ++cursor_x;  // 右移光标
                 adjust_window();
                 break;
             case 'i':
@@ -307,7 +307,7 @@ private:
                 adjust_window();
                 break;
             case 5:
-                if (cursor_x < lines[cursor_y].length()) ++cursor_x;  // 右移光标
+                if (cursor_x <= lines[cursor_y].length()) ++cursor_x;  // 右移光标
                 adjust_window();
                 break;
             case 3:
